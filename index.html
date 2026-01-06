@@ -13,101 +13,104 @@
       <div class="logo">SK</div>
       <div>
         <h1>Sổ Kê Gọn</h1>
-        <p class="muted">Trang tĩnh đọc dữ liệu từ <code>data/ledger.txt</code> → hiển thị sao kê + thống kê.</p>
+        <p class="muted" style="font-size:12px;">Quản lý chi tiêu cá nhân từ <code>ledger.txt</code></p>
       </div>
     </div>
 
     <div class="actions">
-      <button id="btnReload" class="btn">Tải lại từ repo</button>
-      <button id="btnParse" class="btn btnPrimary">Parse & hiển thị</button>
+      <button id="btnReload" class="btn">🔄 Tải lại</button>
+      <button id="btnParse" class="btn btnPrimary">⚡ Parse & Hiển thị</button>
     </div>
   </header>
 
-  <main class="wrap grid">
-    <section class="card">
-      <div class="cardHead">
-        <h2>Tổng quan</h2>
-        <div class="filters">
-          <label class="field">
-            <span>Tháng</span>
-            <select id="monthFilter"></select>
-          </label>
-          <label class="field">
-            <span>Sắp xếp</span>
-            <select id="sortMode">
-              <option value="file">Theo thứ tự trong file</option>
-              <option value="dateAsc">Theo ngày (cũ → mới)</option>
-              <option value="dateDesc">Theo ngày (mới → cũ)</option>
-            </select>
-          </label>
+  <main class="wrap mainGrid">
+    <!-- Left Column: Charts & Summary -->
+    <div>
+      <section class="card">
+        <div class="cardHead">
+          <h2>📊 Tổng quan tài chính</h2>
+          <div class="filters">
+            <label class="field">
+              <span>Tháng</span>
+              <select id="monthFilter"></select>
+            </label>
+            <label class="field">
+              <span>Sắp xếp</span>
+              <select id="sortMode">
+                <option value="file">Theo file</option>
+                <option value="dateAsc">Cũ → Mới</option>
+                <option value="dateDesc">Mới → Cũ</option>
+              </select>
+            </label>
+          </div>
         </div>
-      </div>
 
-      <div class="summary">
-        <div class="pill">
-          <div class="pillLabel">Thu</div>
-          <div id="sumIncome" class="pillValue">0</div>
+        <div class="summary">
+          <div class="pill">
+            <div class="pillLabel">Thu nhập</div>
+            <div id="sumIncome" class="pillValue" style="color:#86efac;">0</div>
+          </div>
+          <div class="pill">
+            <div class="pillLabel">Chi tiêu</div>
+            <div id="sumExpense" class="pillValue" style="color:#fca5a5;">0</div>
+          </div>
+          <div class="pill">
+            <div class="pillLabel">Chênh lệch</div>
+            <div id="sumNet" class="pillValue">0</div>
+          </div>
         </div>
-        <div class="pill">
-          <div class="pillLabel">Chi</div>
-          <div id="sumExpense" class="pillValue">0</div>
+
+        <div class="chartContainer">
+          <h2 style="margin-bottom:16px;font-size:14px;">Thu Chi Theo Ngày</h2>
+          <div id="chartCanvas" class="chart"></div>
         </div>
-        <div class="pill">
-          <div class="pillLabel">Chênh lệch</div>
-          <div id="sumNet" class="pillValue">0</div>
+
+        <div id="errorBox" class="errorBox hidden"></div>
+      </section>
+
+      <!-- Editor Section -->
+      <section class="card editorSection">
+        <div class="cardHead">
+          <h2>✏️ Dữ liệu thô</h2>
+          <div class="actions">
+            <button id="btnCopy" class="btn">📋 Copy</button>
+            <button id="btnDownload" class="btn">💾 Tải về</button>
+          </div>
         </div>
-        <div class="pill">
-          <div class="pillLabel">Số dòng</div>
-          <div id="sumCount" class="pillValue">0</div>
+
+        <p class="muted" style="font-size:12px;margin-bottom:12px;">
+          Sửa trực tiếp và bấm <b>Parse & Hiển thị</b>. Để lưu vĩnh viễn, copy và commit vào repo.
+        </p>
+
+        <textarea id="rawInput" class="textarea" spellcheck="false"></textarea>
+
+        <details class="hint">
+          <summary>💡 Mẹo định dạng</summary>
+          <ul>
+            <li>Dòng ngày: <code>*01/01/2025</code></li>
+            <li>Thu nhập: <code>+ 50000: Tiền lương</code></li>
+            <li>Chi tiêu: <code>- 20k: Cà phê</code></li>
+            <li>Hỗ trợ: 50k (nghìn), 1.2m (triệu)</li>
+          </ul>
+        </details>
+      </section>
+    </div>
+
+    <!-- Right Column: Transaction Details -->
+    <div>
+      <section class="card">
+        <div class="cardHead">
+          <h2>📝 Chi tiết giao dịch</h2>
+          <div id="countBadge" class="badge" style="background:rgba(124,92,255,.2);border-color:rgba(124,92,255,.8);">0 dòng</div>
         </div>
-      </div>
 
-      <div class="tableWrap">
-        <table class="table">
-          <thead>
-            <tr>
-              <th>Ngày</th>
-              <th>Loại</th>
-              <th class="right">Số tiền</th>
-              <th>Ghi chú</th>
-            </tr>
-          </thead>
-          <tbody id="tbody"></tbody>
-        </table>
-      </div>
-
-      <div id="errorBox" class="errorBox hidden"></div>
-    </section>
-
-    <section class="card">
-      <div class="cardHead">
-        <h2>Dữ liệu thô</h2>
-        <div class="actions">
-          <button id="btnCopy" class="btn">Copy</button>
-          <button id="btnDownload" class="btn">Tải ledger.txt</button>
-        </div>
-      </div>
-
-      <p class="muted small">
-        Bạn có thể sửa trực tiếp text bên dưới rồi bấm <b>Parse & hiển thị</b>.
-        Nhưng trang tĩnh không tự commit lên GitHub được: muốn “lưu vĩnh viễn” thì bạn copy nội dung này và paste vào <code>data/ledger.txt</code> trong repo rồi commit.
-      </p>
-
-      <textarea id="rawInput" class="textarea" spellcheck="false"></textarea>
-
-      <details class="hint">
-        <summary>Mẹo định dạng</summary>
-        <ul>
-          <li>Dòng ngày: <code>*01/01/2025</code></li>
-          <li>Giao dịch: <code>+ 50000: Tiền ăn</code> hoặc <code>- 20k: Tiền xăng</code></li>
-          <li>Cho phép comment: dòng bắt đầu bằng <code>#</code> và dòng trống</li>
-        </ul>
-      </details>
-    </section>
+        <div id="transactionList" class="transactionList"></div>
+      </section>
+    </div>
   </main>
 
-  <footer class="wrap footer muted small">
-    <span>“Sao kê tự quản” phiên bản GitHub Pages. Vũ trụ thì hỗn loạn, nhưng sổ chi tiêu có thể gọn.</span>
+  <footer class="wrap footer muted" style="font-size:12px;">
+    <span>Sao kê tự quản. Vũ trụ thì hỗn loạn, nhưng sổ chi tiêu có thể gọn. ✨</span>
   </footer>
 
   <script src="app.js"></script>
