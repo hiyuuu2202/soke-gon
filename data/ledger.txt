@@ -5,15 +5,20 @@
 # - số_tiền: mô_tả
 # Cho phép dùng 50k, 1.2m (k=1,000; m=1,000,000)
 
-*01/01/2025
-+ 50000: Tiền ăn
-+ 10000: Tiền lãi
-- 20000: Tiền xăng
+*02/01/2026
++ 50k: Mẹ cho
+- 30k: Tiền ăn vặt
+- 320k: Tiền mua vịt
 
-*02/01/2025
-- 15000: Trà sữa
-- 120000: Mua sách
-+ 200000: Bán đồ cũ
+*03/01/2026
+- 20k: Nạp điện thoại
+- 100k: Trả tiền Đan (50k tiền xăng về quê + 50k ăn)
+- 50k: Việt lá vay
 
-*05/01/2025
-- 35000: Cafe
+*04/01/2026
++ 50k: Mẹ cho 
+
+*05/01/2026
++ 5.7m: Nhận lương
+- 499k: Đăng ký ChatGPT Plus
+
