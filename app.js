@@ -85,6 +85,17 @@ function formatMoneyVND(n) {
   return v.toLocaleString("vi-VN");
 }
 
+function formatMoneyShort(n) {
+  const v = Number(n) || 0;
+  if (v >= 1000000) {
+    return (v / 1000000).toFixed(1) + 'tr';
+  }
+  if (v >= 1000) {
+    return (v / 1000).toFixed(0) + 'k';
+  }
+  return v.toString();
+}
+
 function setError(msg) {
   const box = el("errorBox");
   if (!msg) {
@@ -106,13 +117,14 @@ function buildMonthOptions(items) {
 
   const optAll = document.createElement("option");
   optAll.value = "all";
-  optAll.textContent = "Tất cả";
+  optAll.textContent = "Tất cả các tháng";
   sel.appendChild(optAll);
 
   for (const m of months) {
     const opt = document.createElement("option");
     opt.value = m;
-    opt.textContent = m;
+    const [year, month] = m.split('-');
+    opt.textContent = `Tháng ${month}/${year}`;
     sel.appendChild(opt);
   }
 }
@@ -141,11 +153,10 @@ function renderChart(items) {
   canvas.innerHTML = "";
 
   if (items.length === 0) {
-    canvas.innerHTML = '<div class="emptyState">Chưa có dữ liệu</div>';
+    canvas.innerHTML = '<div class="emptyState">📊 Chưa có dữ liệu để hiển thị<br><small style="opacity:.6">Thêm giao dịch để xem biểu đồ</small></div>';
     return;
   }
 
-  // Group by date
   const byDate = {};
   items.forEach(x => {
     if (!byDate[x.date]) byDate[x.date] = { income: 0, expense: 0 };
@@ -170,19 +181,20 @@ function renderChart(items) {
     const incomeBar = document.createElement("div");
     incomeBar.className = "bar barIncome";
     incomeBar.style.height = `${incomeHeight}%`;
-    incomeBar.title = `Thu: ${formatMoneyVND(data.income)}`;
+    incomeBar.title = `Thu: ${formatMoneyVND(data.income)} ₫`;
 
     const expenseBar = document.createElement("div");
     expenseBar.className = "bar barExpense";
     expenseBar.style.height = `${expenseHeight}%`;
-    expenseBar.title = `Chi: ${formatMoneyVND(data.expense)}`;
+    expenseBar.title = `Chi: ${formatMoneyVND(data.expense)} ₫`;
 
     barGroup.appendChild(incomeBar);
     barGroup.appendChild(expenseBar);
 
     const label = document.createElement("div");
     label.className = "barLabel";
-    label.textContent = toDDMMYYYY(date);
+    const dateParts = toDDMMYYYY(date).split('/');
+    label.textContent = `${dateParts[0]}/${dateParts[1]}`;
 
     barContainer.appendChild(barGroup);
     barContainer.appendChild(label);
@@ -195,7 +207,7 @@ function renderTransactionList(items) {
   list.innerHTML = "";
 
   if (items.length === 0) {
-    list.innerHTML = '<div class="emptyState">Chưa có giao dịch nào</div>';
+    list.innerHTML = '<div class="emptyState">📝 Chưa có giao dịch<br><small style="opacity:.6">Bắt đầu thêm thu chi của bạn</small></div>';
     return;
   }
 
@@ -224,7 +236,7 @@ function renderTransactionList(items) {
 
     const noteDiv = document.createElement("div");
     noteDiv.className = "transactionNote";
-    noteDiv.textContent = x.note || "(Không có ghi chú)";
+    noteDiv.textContent = x.note || "Không có ghi chú";
 
     item.appendChild(header);
     item.appendChild(amountDiv);
@@ -232,6 +244,28 @@ function renderTransactionList(items) {
 
     list.appendChild(item);
   });
+}
+
+function renderQuickStats(items) {
+  const income = items.filter(x => x.type === "income").reduce((s, x) => s + x.amount, 0);
+  const expense = items.filter(x => x.type === "expense").reduce((s, x) => s + x.amount, 0);
+  
+  const uniqueDates = new Set(items.map(x => x.date)).size;
+  const avgIncome = uniqueDates > 0 ? income / uniqueDates : 0;
+  const avgExpense = uniqueDates > 0 ? expense / uniqueDates : 0;
+  const savingRate = income > 0 ? ((income - expense) / income * 100) : 0;
+
+  el("avgIncome").textContent = formatMoneyShort(avgIncome) + 'đ';
+  el("avgExpense").textContent = formatMoneyShort(avgExpense) + 'đ';
+  el("totalDays").textContent = uniqueDates;
+  el("savingRate").textContent = savingRate.toFixed(0) + '%';
+  el("savingRate").style.color = savingRate >= 0 ? '#86efac' : '#fca5a5';
+}
+
+function updateLineCount() {
+  const text = el("rawInput").value;
+  const lines = text.split('\n').length;
+  el("lineCount").textContent = `${lines} dòng`;
 }
 
 function render(items) {
@@ -247,10 +281,13 @@ function render(items) {
   el("sumExpense").textContent = formatMoneyVND(expense);
   el("sumNet").textContent = formatMoneyVND(net);
   el("sumNet").style.color = net >= 0 ? "#86efac" : "#fca5a5";
-  el("countBadge").textContent = `${filtered.length} dòng`;
+  
+  const countText = filtered.length === 1 ? '1 giao dịch' : `${filtered.length} giao dịch`;
+  el("countText").textContent = countText;
 
   renderChart(filtered);
   renderTransactionList(filtered);
+  renderQuickStats(filtered);
 }
 
 async function fetchLedgerText() {
@@ -268,6 +305,7 @@ async function loadFromRepo() {
   const text = await fetchLedgerText();
   lastRaw = text;
   el("rawInput").value = text;
+  updateLineCount();
 
   const items = parseLedgerText(text);
   lastItems = items;
@@ -280,6 +318,7 @@ function parseFromTextarea() {
   setError("");
   const text = el("rawInput").value;
   lastRaw = text;
+  updateLineCount();
 
   const items = parseLedgerText(text);
   lastItems = items;
@@ -303,9 +342,14 @@ async function copyRaw() {
   const text = el("rawInput").value;
   await navigator.clipboard.writeText(text);
   const btn = el("btnCopy");
-  const old = btn.textContent;
-  btn.textContent = "✓ Đã copy";
-  setTimeout(() => (btn.textContent = old), 900);
+  const oldHTML = btn.innerHTML;
+  btn.innerHTML = `
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <polyline points="20 6 9 17 4 12"/>
+    </svg>
+    Đã sao chép
+  `;
+  setTimeout(() => (btn.innerHTML = oldHTML), 1500);
 }
 
 function wireEvents() {
@@ -334,6 +378,8 @@ function wireEvents() {
       document.execCommand("copy");
     });
   });
+
+  el("rawInput").addEventListener("input", updateLineCount);
 }
 
 (function bootstrap(){
@@ -341,9 +387,11 @@ function wireEvents() {
 
   loadFromRepo().catch(err => {
     setError(
-      "Không tải được dữ liệu từ repo.\n" +
-      "Nếu bạn đang mở bằng file://, hãy deploy lên GitHub Pages hoặc chạy local server.\n\n" +
-      "Chi tiết: " + err.message
+      "⚠️ Không tải được dữ liệu từ repo\n\n" +
+      "Nếu bạn đang mở bằng file://, hãy:\n" +
+      "• Deploy lên GitHub Pages, hoặc\n" +
+      "• Chạy local server (Live Server extension)\n\n" +
+      "Chi tiết lỗi: " + err.message
     );
   });
 })();

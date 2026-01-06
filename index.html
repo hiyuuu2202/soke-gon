@@ -3,23 +3,48 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Sổ Kê Gọn</title>
-  <meta name="description" content="Sao kê chi tiêu cá nhân từ file text (ledger.txt) chạy trên GitHub Pages." />
+  <title>Sổ Kê Gọn - Quản lý tài chính thông minh</title>
+  <meta name="description" content="Công cụ quản lý chi tiêu cá nhân miễn phí, đơn giản và hiệu quả. Theo dõi thu chi, phân tích tài chính từ file text." />
   <link rel="stylesheet" href="styles.css" />
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%237c5cff'/%3E%3Ctext x='50' y='70' font-size='60' font-weight='bold' text-anchor='middle' fill='white' font-family='system-ui'%3ESK%3C/text%3E%3C/svg%3E">
 </head>
 <body>
   <header class="wrap header">
     <div class="brand">
-      <div class="logo">SK</div>
+      <div class="logo">
+        <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="40" height="40" rx="10" fill="url(#gradient)"/>
+          <path d="M12 14C12 13.4477 12.4477 13 13 13H27C27.5523 13 28 13.4477 28 14V26C28 26.5523 27.5523 27 27 27H13C12.4477 27 12 26.5523 12 26V14Z" stroke="white" stroke-width="2"/>
+          <path d="M16 17H24M16 20H24M16 23H21" stroke="white" stroke-width="2" stroke-linecap="round"/>
+          <defs>
+            <linearGradient id="gradient" x1="0" y1="0" x2="40" y2="40">
+              <stop stop-color="#7c5cff"/>
+              <stop offset="1" stop-color="#22c55e"/>
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
       <div>
         <h1>Sổ Kê Gọn</h1>
-        <p class="muted" style="font-size:12px;">Quản lý chi tiêu cá nhân từ <code>ledger.txt</code></p>
+        <p class="muted tagline">Kiểm soát tài chính - Sống tự do hơn</p>
       </div>
     </div>
 
     <div class="actions">
-      <button id="btnReload" class="btn">🔄 Tải lại</button>
-      <button id="btnParse" class="btn btnPrimary">⚡ Parse & Hiển thị</button>
+      <button id="btnReload" class="btn btnSecondary">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16"/>
+        </svg>
+        Tải lại
+      </button>
+      <button id="btnParse" class="btn btnPrimary">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+        </svg>
+        Phân tích ngay
+      </button>
     </div>
   </header>
 
@@ -28,40 +53,72 @@
     <div>
       <section class="card">
         <div class="cardHead">
-          <h2>📊 Tổng quan tài chính</h2>
+          <div>
+            <h2>📊 Tổng quan tài chính</h2>
+            <p class="cardSubtitle">Phân tích chi tiết thu chi của bạn</p>
+          </div>
           <div class="filters">
-            <label class="field">
-              <span>Tháng</span>
-              <select id="monthFilter"></select>
-            </label>
-            <label class="field">
-              <span>Sắp xếp</span>
-              <select id="sortMode">
-                <option value="file">Theo file</option>
-                <option value="dateAsc">Cũ → Mới</option>
-                <option value="dateDesc">Mới → Cũ</option>
+            <div class="filterGroup">
+              <label class="filterLabel">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                  <line x1="16" y1="2" x2="16" y2="6"/>
+                  <line x1="8" y1="2" x2="8" y2="6"/>
+                  <line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+                Tháng
+              </label>
+              <select id="monthFilter" class="select"></select>
+            </div>
+            <div class="filterGroup">
+              <label class="filterLabel">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="12" y1="5" x2="12" y2="19"/>
+                  <polyline points="19 12 12 19 5 12"/>
+                </svg>
+                Sắp xếp
+              </label>
+              <select id="sortMode" class="select">
+                <option value="file">Theo file gốc</option>
+                <option value="dateAsc">Ngày cũ nhất</option>
+                <option value="dateDesc">Ngày mới nhất</option>
               </select>
-            </label>
+            </div>
           </div>
         </div>
 
         <div class="summary">
-          <div class="pill">
-            <div class="pillLabel">Thu nhập</div>
-            <div id="sumIncome" class="pillValue" style="color:#86efac;">0</div>
+          <div class="pill pillIncome">
+            <div class="pillIcon">↑</div>
+            <div class="pillContent">
+              <div class="pillLabel">Tổng thu nhập</div>
+              <div id="sumIncome" class="pillValue">0</div>
+            </div>
           </div>
-          <div class="pill">
-            <div class="pillLabel">Chi tiêu</div>
-            <div id="sumExpense" class="pillValue" style="color:#fca5a5;">0</div>
+          <div class="pill pillExpense">
+            <div class="pillIcon">↓</div>
+            <div class="pillContent">
+              <div class="pillLabel">Tổng chi tiêu</div>
+              <div id="sumExpense" class="pillValue">0</div>
+            </div>
           </div>
-          <div class="pill">
-            <div class="pillLabel">Chênh lệch</div>
-            <div id="sumNet" class="pillValue">0</div>
+          <div class="pill pillNet">
+            <div class="pillIcon">≈</div>
+            <div class="pillContent">
+              <div class="pillLabel">Chênh lệch</div>
+              <div id="sumNet" class="pillValue">0</div>
+            </div>
           </div>
         </div>
 
         <div class="chartContainer">
-          <h2 style="margin-bottom:16px;font-size:14px;">Thu Chi Theo Ngày</h2>
+          <div class="chartHeader">
+            <h3>Biểu đồ thu chi theo ngày</h3>
+            <div class="chartLegend">
+              <span class="legendItem"><span class="legendDot legendIncome"></span> Thu nhập</span>
+              <span class="legendItem"><span class="legendDot legendExpense"></span> Chi tiêu</span>
+            </div>
+          </div>
           <div id="chartCanvas" class="chart"></div>
         </div>
 
@@ -69,48 +126,138 @@
       </section>
 
       <!-- Editor Section -->
-      <section class="card editorSection">
+      <section class="card editorCard">
         <div class="cardHead">
-          <h2>✏️ Dữ liệu thô</h2>
+          <div>
+            <h2>✏️ Dữ liệu nguồn</h2>
+            <p class="cardSubtitle">Chỉnh sửa trực tiếp hoặc tải về để lưu trữ</p>
+          </div>
           <div class="actions">
-            <button id="btnCopy" class="btn">📋 Copy</button>
-            <button id="btnDownload" class="btn">💾 Tải về</button>
+            <button id="btnCopy" class="btn btnSecondary">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+              </svg>
+              Sao chép
+            </button>
+            <button id="btnDownload" class="btn btnSecondary">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+              </svg>
+              Tải về
+            </button>
           </div>
         </div>
 
-        <p class="muted" style="font-size:12px;margin-bottom:12px;">
-          Sửa trực tiếp và bấm <b>Parse & Hiển thị</b>. Để lưu vĩnh viễn, copy và commit vào repo.
-        </p>
-
-        <textarea id="rawInput" class="textarea" spellcheck="false"></textarea>
+        <div class="editorWrapper">
+          <div class="editorToolbar">
+            <span class="editorInfo">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="16" x2="12" y2="12"/>
+                <line x1="12" y1="8" x2="12.01" y2="8"/>
+              </svg>
+              Format: Plain Text (UTF-8)
+            </span>
+            <span id="lineCount" class="editorInfo">0 dòng</span>
+          </div>
+          <textarea id="rawInput" class="textarea" spellcheck="false" placeholder="Dữ liệu sẽ được tải tự động từ data/ledger.txt..."></textarea>
+        </div>
 
         <details class="hint">
-          <summary>💡 Mẹo định dạng</summary>
-          <ul>
-            <li>Dòng ngày: <code>*01/01/2025</code></li>
-            <li>Thu nhập: <code>+ 50000: Tiền lương</code></li>
-            <li>Chi tiêu: <code>- 20k: Cà phê</code></li>
-            <li>Hỗ trợ: 50k (nghìn), 1.2m (triệu)</li>
-          </ul>
+          <summary>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            Hướng dẫn sử dụng
+          </summary>
+          <div class="hintContent">
+            <div class="hintSection">
+              <h4>📅 Định dạng ngày</h4>
+              <code>*01/01/2025</code>
+              <p>Bắt đầu dòng mới với dấu * và ngày theo format dd/mm/yyyy</p>
+            </div>
+            <div class="hintSection">
+              <h4>💰 Ghi chép giao dịch</h4>
+              <code>+ 50000: Tiền lương tháng 1</code>
+              <code>- 20k: Cà phê sáng</code>
+              <p>Dấu + cho thu nhập, dấu - cho chi tiêu. Hỗ trợ 50k (nghìn), 1.2m (triệu)</p>
+            </div>
+            <div class="hintSection">
+              <h4>💡 Mẹo nhỏ</h4>
+              <ul>
+                <li>Dòng bắt đầu bằng <code>#</code> là ghi chú, sẽ bị bỏ qua</li>
+                <li>Dòng trống sẽ được tự động bỏ qua</li>
+                <li>Ghi chú sau dấu <code>:</code> là tùy chọn, có thể bỏ qua</li>
+              </ul>
+            </div>
+          </div>
         </details>
       </section>
     </div>
 
     <!-- Right Column: Transaction Details -->
     <div>
-      <section class="card">
+      <section class="card transactionCard">
         <div class="cardHead">
-          <h2>📝 Chi tiết giao dịch</h2>
-          <div id="countBadge" class="badge" style="background:rgba(124,92,255,.2);border-color:rgba(124,92,255,.8);">0 dòng</div>
+          <div>
+            <h2>📝 Lịch sử giao dịch</h2>
+            <p class="cardSubtitle">Danh sách chi tiết từng khoản</p>
+          </div>
+          <div id="countBadge" class="statsBadge">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+              <polyline points="10 9 9 9 8 9"/>
+            </svg>
+            <span id="countText">0 giao dịch</span>
+          </div>
         </div>
 
         <div id="transactionList" class="transactionList"></div>
       </section>
+
+      <!-- Quick Stats -->
+      <section class="card quickStats">
+        <h3 class="statsTitle">Thống kê nhanh</h3>
+        <div class="statsGrid">
+          <div class="statItem">
+            <div class="statLabel">TB thu/ngày</div>
+            <div id="avgIncome" class="statValue">0đ</div>
+          </div>
+          <div class="statItem">
+            <div class="statLabel">TB chi/ngày</div>
+            <div id="avgExpense" class="statValue">0đ</div>
+          </div>
+          <div class="statItem">
+            <div class="statLabel">Số ngày có GD</div>
+            <div id="totalDays" class="statValue">0</div>
+          </div>
+          <div class="statItem">
+            <div class="statLabel">Tỷ lệ tiết kiệm</div>
+            <div id="savingRate" class="statValue">0%</div>
+          </div>
+        </div>
+      </section>
     </div>
   </main>
 
-  <footer class="wrap footer muted" style="font-size:12px;">
-    <span>Sao kê tự quản. Vũ trụ thì hỗn loạn, nhưng sổ chi tiêu có thể gọn. ✨</span>
+  <footer class="wrap footer">
+    <div class="footerContent">
+      <div class="footerSlogan">
+        <p class="mainSlogan">"Từng đồng một, tương lai rõ ràng."</p>
+        <p class="subSlogan">Kiểm soát chi tiêu hôm nay - Tự do tài chính ngày mai</p>
+      </div>
+      <div class="footerLinks">
+        <span class="footerVersion">v2.0</span>
+        <span class="footerDivider">•</span>
+        <span class="footerCopyright">Made with 💜 for better financial life</span>
+      </div>
+    </div>
   </footer>
 
   <script src="app.js"></script>
