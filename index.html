@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Sổ Kê Gọn</title>
+  <meta name="description" content="Sao kê chi tiêu cá nhân từ file text (ledger.txt) chạy trên GitHub Pages." />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="wrap header">
+    <div class="brand">
+      <div class="logo">SK</div>
+      <div>
+        <h1>Sổ Kê Gọn</h1>
+        <p class="muted">Trang tĩnh đọc dữ liệu từ <code>data/ledger.txt</code> → hiển thị sao kê + thống kê.</p>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button id="btnReload" class="btn">Tải lại từ repo</button>
+      <button id="btnParse" class="btn btnPrimary">Parse & hiển thị</button>
+    </div>
+  </header>
+
+  <main class="wrap grid">
+    <section class="card">
+      <div class="cardHead">
+        <h2>Tổng quan</h2>
+        <div class="filters">
+          <label class="field">
+            <span>Tháng</span>
+            <select id="monthFilter"></select>
+          </label>
+          <label class="field">
+            <span>Sắp xếp</span>
+            <select id="sortMode">
+              <option value="file">Theo thứ tự trong file</option>
+              <option value="dateAsc">Theo ngày (cũ → mới)</option>
+              <option value="dateDesc">Theo ngày (mới → cũ)</option>
+            </select>
+          </label>
+        </div>
+      </div>
+
+      <div class="summary">
+        <div class="pill">
+          <div class="pillLabel">Thu</div>
+          <div id="sumIncome" class="pillValue">0</div>
+        </div>
+        <div class="pill">
+          <div class="pillLabel">Chi</div>
+          <div id="sumExpense" class="pillValue">0</div>
+        </div>
+        <div class="pill">
+          <div class="pillLabel">Chênh lệch</div>
+          <div id="sumNet" class="pillValue">0</div>
+        </div>
+        <div class="pill">
+          <div class="pillLabel">Số dòng</div>
+          <div id="sumCount" class="pillValue">0</div>
+        </div>
+      </div>
+
+      <div class="tableWrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Ngày</th>
+              <th>Loại</th>
+              <th class="right">Số tiền</th>
+              <th>Ghi chú</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+
+      <div id="errorBox" class="errorBox hidden"></div>
+    </section>
+
+    <section class="card">
+      <div class="cardHead">
+        <h2>Dữ liệu thô</h2>
+        <div class="actions">
+          <button id="btnCopy" class="btn">Copy</button>
+          <button id="btnDownload" class="btn">Tải ledger.txt</button>
+        </div>
+      </div>
+
+      <p class="muted small">
+        Bạn có thể sửa trực tiếp text bên dưới rồi bấm <b>Parse & hiển thị</b>.
+        Nhưng trang tĩnh không tự commit lên GitHub được: muốn “lưu vĩnh viễn” thì bạn copy nội dung này và paste vào <code>data/ledger.txt</code> trong repo rồi commit.
+      </p>
+
+      <textarea id="rawInput" class="textarea" spellcheck="false"></textarea>
+
+      <details class="hint">
+        <summary>Mẹo định dạng</summary>
+        <ul>
+          <li>Dòng ngày: <code>*01/01/2025</code></li>
+          <li>Giao dịch: <code>+ 50000: Tiền ăn</code> hoặc <code>- 20k: Tiền xăng</code></li>
+          <li>Cho phép comment: dòng bắt đầu bằng <code>#</code> và dòng trống</li>
+        </ul>
+      </details>
+    </section>
+  </main>
+
+  <footer class="wrap footer muted small">
+    <span>“Sao kê tự quản” phiên bản GitHub Pages. Vũ trụ thì hỗn loạn, nhưng sổ chi tiêu có thể gọn.</span>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
