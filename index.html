@@ -162,6 +162,57 @@
             <span id="lineCount" class="editorInfo">0 dòng</span>
           </div>
           <textarea id="rawInput" class="textarea" spellcheck="false" placeholder="Dữ liệu sẽ được tải tự động từ data/ledger.txt..."></textarea>
+          <!-- Debts Editor Section -->
+<section class="card editorCard">
+  <div class="cardHead">
+    <div>
+      <h2>💳 Dữ liệu công nợ</h2>
+      <p class="cardSubtitle">Ai nợ bạn, bạn nợ ai (đọc từ <code>data/debts.txt</code>)</p>
+    </div>
+    <div class="actions">
+      <button id="btnCopyDebt" class="btn btnSecondary">
+        Sao chép
+      </button>
+      <button id="btnDownloadDebt" class="btn btnSecondary">
+        Tải về
+      </button>
+    </div>
+  </div>
+
+  <div class="editorWrapper">
+    <div class="editorToolbar">
+      <span class="editorInfo">Format: Plain Text (UTF-8)</span>
+      <span id="debtLineCount" class="editorInfo">0 dòng</span>
+    </div>
+    <textarea id="debtInput" class="textarea" spellcheck="false" placeholder="Dữ liệu sẽ được tải tự động từ data/debts.txt..."></textarea>
+  </div>
+
+  <details class="hint">
+    <summary>Hướng dẫn format công nợ</summary>
+    <div class="hintContent">
+      <div class="hintSection">
+        <h4>👤 Tên người</h4>
+        <code>@Nam</code>
+      </div>
+      <div class="hintSection">
+        <h4>➕ Người đó nợ bạn</h4>
+        <code>+ 200k: Cho mượn tiền</code>
+      </div>
+      <div class="hintSection">
+        <h4>➖ Bạn nợ người đó</h4>
+        <code>- 50k: Mua hộ</code>
+      </div>
+      <div class="hintSection">
+        <h4>💡 Ghi chú</h4>
+        <ul>
+          <li>Dòng bắt đầu bằng <code>#</code> là comment</li>
+          <li>Hỗ trợ <code>k</code> (nghìn), <code>m</code> (triệu)</li>
+        </ul>
+      </div>
+    </div>
+  </details>
+</section>
+
         </div>
 
         <details class="hint">
@@ -299,6 +350,46 @@
             <div id="savingRate" class="statValue">0%</div>
           </div>
         </div>
+      <section class="card debtCard">
+  <div class="cardHead">
+    <div>
+      <h2>💳 Công nợ</h2>
+      <p class="cardSubtitle">Tổng hợp theo từng người</p>
+    </div>
+    <div id="debtCountBadge" class="statsBadge">
+      <span id="debtCountText">0 người</span>
+    </div>
+  </div>
+
+  <div class="summary debtSummary">
+    <div class="pill pillIncome">
+      <div class="pillIcon">↑</div>
+      <div class="pillContent">
+        <div class="pillLabel">Người khác nợ bạn</div>
+        <div id="debtSumReceivable" class="pillValue">0</div>
+      </div>
+    </div>
+
+    <div class="pill pillExpense">
+      <div class="pillIcon">↓</div>
+      <div class="pillContent">
+        <div class="pillLabel">Bạn nợ người khác</div>
+        <div id="debtSumPayable" class="pillValue">0</div>
+      </div>
+    </div>
+
+    <div class="pill pillNet">
+      <div class="pillIcon">≈</div>
+      <div class="pillContent">
+        <div class="pillLabel">Net công nợ</div>
+        <div id="debtSumNet" class="pillValue">0</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="debtList" class="debtList"></div>
+</section>
+
       </section>
     </div>
   </main>

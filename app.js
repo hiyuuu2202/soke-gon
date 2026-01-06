@@ -1,7 +1,11 @@
 const LEDGER_URL = "data/ledger.txt";
+const DEBTS_URL = "data/debts.txt";
 
 const el = (id) => document.getElementById(id);
 
+/* =========================
+   Utils
+========================= */
 function parseAmount(raw) {
   let s = String(raw).trim().toLowerCase();
   const unitMatch = s.match(/^([0-9][0-9.,\s]*)([km])$/i);
@@ -38,6 +42,21 @@ function monthKeyFromISODate(iso) {
   return m ? `${m[1]}-${m[2]}` : "unknown";
 }
 
+function formatMoneyVND(n) {
+  const v = Number(n) || 0;
+  return v.toLocaleString("vi-VN");
+}
+
+function formatMoneyShort(n) {
+  const v = Number(n) || 0;
+  if (v >= 1000000) return (v / 1000000).toFixed(1) + "tr";
+  if (v >= 1000) return (v / 1000).toFixed(0) + "k";
+  return v.toString();
+}
+
+/* =========================
+   Ledger Parser
+========================= */
 function parseLedgerText(text) {
   const lines = text.split(/\r?\n/);
   let currentDateISO = null;
@@ -80,24 +99,99 @@ function parseLedgerText(text) {
   return items;
 }
 
-function formatMoneyVND(n) {
-  const v = Number(n) || 0;
-  return v.toLocaleString("vi-VN");
+/* =========================
+   Debts Parser
+   @Name
+   + amount: they owe me
+   - amount: I owe them
+========================= */
+function parseDebtsText(text) {
+  const lines = text.split(/\r?\n/);
+  let currentPerson = null;
+  const entries = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const rawLine = lines[i];
+    const line = rawLine.trim();
+
+    if (!line) continue;
+    if (line.startsWith("#")) continue;
+
+    if (line.startsWith("@")) {
+      const name = line.slice(1).trim();
+      if (!name) throw new Error(`Dòng ${i + 1}: Thiếu tên sau @\n> ${rawLine}`);
+      currentPerson = name;
+      continue;
+    }
+
+    const m = /^([+-])\s*([0-9][0-9.,\s]*|[0-9]+(?:\.[0-9]+)?[kKmM]?)\s*(?::\s*(.*))?$/.exec(line);
+    if (m) {
+      if (!currentPerson) {
+        throw new Error(`Dòng ${i + 1}: Có công nợ nhưng chưa khai báo người (@Tên)\n> ${rawLine}`);
+      }
+      const sign = m[1];
+      const amountAbs = parseAmount(m[2]);
+      const note = (m[3] ?? "").trim();
+
+      entries.push({
+        person: currentPerson,
+        dir: sign, // + = they owe me, - = I owe them
+        amount: amountAbs,
+        note
+      });
+      continue;
+    }
+
+    throw new Error(`Dòng ${i + 1} (công nợ) không đúng định dạng:\n> ${rawLine}`);
+  }
+
+  return entries;
 }
 
-function formatMoneyShort(n) {
-  const v = Number(n) || 0;
-  if (v >= 1000000) {
-    return (v / 1000000).toFixed(1) + 'tr';
+function computeDebts(entries) {
+  const map = new Map(); // person -> {recv, pay, items}
+  for (const e of entries) {
+    if (!map.has(e.person)) map.set(e.person, { recv: 0, pay: 0, items: [] });
+    const p = map.get(e.person);
+    if (e.dir === "+") p.recv += e.amount;
+    else p.pay += e.amount;
+    p.items.push(e);
   }
-  if (v >= 1000) {
-    return (v / 1000).toFixed(0) + 'k';
+
+  const persons = [];
+  let totalRecv = 0;
+  let totalPay = 0;
+
+  for (const [name, v] of map.entries()) {
+    const net = v.recv - v.pay;
+    totalRecv += v.recv;
+    totalPay += v.pay;
+    persons.push({
+      person: name,
+      receivable: v.recv,
+      payable: v.pay,
+      net,
+      count: v.items.length
+    });
   }
-  return v.toString();
+
+  persons.sort((a, b) => Math.abs(b.net) - Math.abs(a.net));
+
+  return {
+    totalReceivable: totalRecv,
+    totalPayable: totalPay,
+    totalNet: totalRecv - totalPay,
+    persons
+  };
 }
 
+/* =========================
+   UI Helpers
+========================= */
 function setError(msg) {
   const box = el("errorBox");
+  if (!box) return;
+
   if (!msg) {
     box.classList.add("hidden");
     box.textContent = "";
@@ -123,7 +217,7 @@ function buildMonthOptions(items) {
   for (const m of months) {
     const opt = document.createElement("option");
     opt.value = m;
-    const [year, month] = m.split('-');
+    const [year, month] = m.split("-");
     opt.textContent = `Tháng ${month}/${year}`;
     sel.appendChild(opt);
   }
@@ -148,6 +242,9 @@ function applyFilterAndSort(items) {
   return out;
 }
 
+/* =========================
+   Ledger Rendering (giữ nguyên logic của bạn)
+========================= */
 function renderChart(items) {
   const canvas = el("chartCanvas");
   canvas.innerHTML = "";
@@ -193,7 +290,7 @@ function renderChart(items) {
 
     const label = document.createElement("div");
     label.className = "barLabel";
-    const dateParts = toDDMMYYYY(date).split('/');
+    const dateParts = toDDMMYYYY(date).split("/");
     label.textContent = `${dateParts[0]}/${dateParts[1]}`;
 
     barContainer.appendChild(barGroup);
@@ -211,7 +308,6 @@ function renderTransactionList(items) {
     return;
   }
 
-  // Đảo ngược để hiển thị mới nhất trước
   const reversedItems = [...items].reverse();
 
   reversedItems.forEach(x => {
@@ -252,28 +348,34 @@ function renderTransactionList(items) {
 function renderQuickStats(items) {
   const income = items.filter(x => x.type === "income").reduce((s, x) => s + x.amount, 0);
   const expense = items.filter(x => x.type === "expense").reduce((s, x) => s + x.amount, 0);
-  
+
   const uniqueDates = new Set(items.map(x => x.date)).size;
   const avgIncome = uniqueDates > 0 ? income / uniqueDates : 0;
   const avgExpense = uniqueDates > 0 ? expense / uniqueDates : 0;
   const savingRate = income > 0 ? ((income - expense) / income * 100) : 0;
 
-  el("avgIncome").textContent = formatMoneyShort(avgIncome) + 'đ';
-  el("avgExpense").textContent = formatMoneyShort(avgExpense) + 'đ';
+  el("avgIncome").textContent = formatMoneyShort(avgIncome) + "đ";
+  el("avgExpense").textContent = formatMoneyShort(avgExpense) + "đ";
   el("totalDays").textContent = uniqueDates;
-  el("savingRate").textContent = savingRate.toFixed(0) + '%';
-  el("savingRate").style.color = savingRate >= 0 ? '#86efac' : '#fca5a5';
+  el("savingRate").textContent = savingRate.toFixed(0) + "%";
+  el("savingRate").style.color = savingRate >= 0 ? "#86efac" : "#fca5a5";
 }
 
 function updateLineCount() {
   const text = el("rawInput").value;
-  const lines = text.split('\n').length;
+  const lines = text.split("\n").length;
   el("lineCount").textContent = `${lines} dòng`;
 }
 
-function render(items) {
-  setError("");
+function updateDebtLineCount() {
+  const area = el("debtInput");
+  const out = el("debtLineCount");
+  if (!area || !out) return;
+  const lines = area.value.split("\n").length;
+  out.textContent = `${lines} dòng`;
+}
 
+function renderLedger(items) {
   const filtered = applyFilterAndSort(items);
 
   const income = filtered.filter(x => x.type === "income").reduce((s, x) => s + x.amount, 0);
@@ -284,8 +386,8 @@ function render(items) {
   el("sumExpense").textContent = formatMoneyVND(expense);
   el("sumNet").textContent = formatMoneyVND(net);
   el("sumNet").style.color = net >= 0 ? "#86efac" : "#fca5a5";
-  
-  const countText = filtered.length === 1 ? '1 giao dịch' : `${filtered.length} giao dịch`;
+
+  const countText = filtered.length === 1 ? "1 giao dịch" : `${filtered.length} giao dịch`;
   el("countText").textContent = countText;
 
   renderChart(filtered);
@@ -293,43 +395,133 @@ function render(items) {
   renderQuickStats(filtered);
 }
 
-async function fetchLedgerText() {
-  const url = `${LEDGER_URL}?v=${Date.now()}`;
-  const res = await fetch(url, { redirect: "follow" });
-  if (!res.ok) throw new Error(`Không đọc được ${LEDGER_URL} (HTTP ${res.status})`);
+/* =========================
+   Debts Rendering
+========================= */
+function renderDebts(entries) {
+  const sumRecvEl = el("debtSumReceivable");
+  const sumPayEl = el("debtSumPayable");
+  const sumNetEl = el("debtSumNet");
+  const listEl = el("debtList");
+  const countEl = el("debtCountText");
+
+  if (!sumRecvEl || !sumPayEl || !sumNetEl || !listEl || !countEl) return;
+
+  const model = computeDebts(entries);
+
+  sumRecvEl.textContent = formatMoneyVND(model.totalReceivable);
+  sumPayEl.textContent = formatMoneyVND(model.totalPayable);
+  sumNetEl.textContent = formatMoneyVND(model.totalNet);
+  sumNetEl.style.color = model.totalNet >= 0 ? "#86efac" : "#fca5a5";
+
+  countEl.textContent = model.persons.length === 1 ? "1 người" : `${model.persons.length} người`;
+
+  listEl.innerHTML = "";
+
+  if (model.persons.length === 0) {
+    listEl.innerHTML = '<div class="emptyState">💳 Chưa có công nợ<br><small style="opacity:.6">Thêm @Tên và + / - để theo dõi</small></div>';
+    return;
+  }
+
+  for (const p of model.persons) {
+    const box = document.createElement("div");
+    box.className = "debtPerson";
+
+    const top = document.createElement("div");
+    top.className = "debtTop";
+
+    const name = document.createElement("div");
+    name.className = "debtName";
+    name.textContent = p.person;
+
+    const badge = document.createElement("span");
+    badge.className = `badge ${p.net >= 0 ? "badgeIncome" : "badgeExpense"}`;
+    const sign = p.net >= 0 ? "+" : "-";
+    badge.textContent = `${sign} ${formatMoneyVND(Math.abs(p.net))} ₫`;
+
+    top.appendChild(name);
+    top.appendChild(badge);
+
+    const meta = document.createElement("div");
+    meta.className = "debtMeta";
+    meta.textContent =
+      `Họ nợ bạn: ${formatMoneyVND(p.receivable)} ₫ • Bạn nợ: ${formatMoneyVND(p.payable)} ₫ • ${p.count} dòng`;
+
+    box.appendChild(top);
+    box.appendChild(meta);
+
+    listEl.appendChild(box);
+  }
+}
+
+/* =========================
+   Fetch
+========================= */
+async function fetchTextFile(url) {
+  const u = `${url}?v=${Date.now()}`; // cache-bust
+  const res = await fetch(u, { redirect: "follow" });
+  if (!res.ok) throw new Error(`Không đọc được ${url} (HTTP ${res.status})`);
   return await res.text();
 }
 
-let lastItems = [];
-let lastRaw = "";
+/* =========================
+   State
+========================= */
+let lastLedgerItems = [];
+let lastDebtEntries = [];
 
+/* =========================
+   Load & Parse
+========================= */
 async function loadFromRepo() {
   setError("");
-  const text = await fetchLedgerText();
-  lastRaw = text;
-  el("rawInput").value = text;
+
+  const [ledgerText, debtsText] = await Promise.all([
+    fetchTextFile(LEDGER_URL),
+    fetchTextFile(DEBTS_URL).catch(() => "# Công nợ\n\n@Nam\n+ 200k: Ví dụ\n")
+  ]);
+
+  el("rawInput").value = ledgerText;
   updateLineCount();
 
-  const items = parseLedgerText(text);
-  lastItems = items;
+  const debtArea = el("debtInput");
+  if (debtArea) {
+    debtArea.value = debtsText;
+    updateDebtLineCount();
+  }
 
-  buildMonthOptions(items);
-  render(items);
+  lastLedgerItems = parseLedgerText(ledgerText);
+  lastDebtEntries = parseDebtsText(debtsText);
+
+  buildMonthOptions(lastLedgerItems);
+  renderLedger(lastLedgerItems);
+  renderDebts(lastDebtEntries);
 }
 
-function parseFromTextarea() {
+function parseFromTextareas() {
   setError("");
-  const text = el("rawInput").value;
-  lastRaw = text;
+
+  const ledgerText = el("rawInput").value;
   updateLineCount();
+  lastLedgerItems = parseLedgerText(ledgerText);
 
-  const items = parseLedgerText(text);
-  lastItems = items;
+  const debtArea = el("debtInput");
+  if (debtArea) {
+    const debtsText = debtArea.value;
+    updateDebtLineCount();
+    lastDebtEntries = parseDebtsText(debtsText);
+  } else {
+    lastDebtEntries = [];
+  }
 
-  buildMonthOptions(items);
-  render(items);
+  buildMonthOptions(lastLedgerItems);
+  renderLedger(lastLedgerItems);
+  renderDebts(lastDebtEntries);
 }
 
+/* =========================
+   Download / Copy
+========================= */
 function downloadText(filename, text) {
   const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
   const a = document.createElement("a");
@@ -341,64 +533,17 @@ function downloadText(filename, text) {
   URL.revokeObjectURL(a.href);
 }
 
-async function copyRaw() {
-  const text = el("rawInput").value;
+async function copyText(text, buttonEl, okLabel = "Đã sao chép") {
   await navigator.clipboard.writeText(text);
-  const btn = el("btnCopy");
-  const oldHTML = btn.innerHTML;
-  btn.innerHTML = `
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <polyline points="20 6 9 17 4 12"/>
-    </svg>
-    Đã sao chép
-  `;
-  setTimeout(() => (btn.innerHTML = oldHTML), 1500);
+  if (!buttonEl) return;
+  const old = buttonEl.innerHTML;
+  buttonEl.textContent = okLabel;
+  setTimeout(() => (buttonEl.innerHTML = old), 1200);
 }
 
-function wireEvents() {
-  el("btnReload").addEventListener("click", () => {
-    loadFromRepo().catch(err => setError(err.message));
-  });
-
-  el("btnParse").addEventListener("click", () => {
-    try {
-      parseFromTextarea();
-    } catch (err) {
-      setError(String(err.message || err));
-    }
-  });
-
-  el("monthFilter").addEventListener("change", () => render(lastItems));
-  el("sortMode").addEventListener("change", () => render(lastItems));
-
-  el("btnDownload").addEventListener("click", () => {
-    downloadText("ledger.txt", el("rawInput").value);
-  });
-
-  el("btnCopy").addEventListener("click", () => {
-    copyRaw().catch(() => {
-      el("rawInput").select();
-      document.execCommand("copy");
-    });
-  });
-
-  el("rawInput").addEventListener("input", updateLineCount);
-
-  // Quick Input Form
-  el("quickInputForm").addEventListener("submit", (e) => {
-    e.preventDefault();
-    handleQuickInput();
-  });
-
-  el("btnCopyGenerated").addEventListener("click", () => {
-    copyGeneratedText();
-  });
-
-  // Set default date to today
-  const today = new Date().toISOString().split('T')[0];
-  el("inputDate").value = today;
-}
-
+/* =========================
+   Quick Input (giữ như bạn)
+========================= */
 function handleQuickInput() {
   const dateInput = el("inputDate").value; // yyyy-mm-dd
   const type = el("inputType").value;
@@ -411,36 +556,24 @@ function handleQuickInput() {
   }
 
   try {
-    // Parse amount
     const amount = parseAmount(amountRaw);
-    
-    // Convert date from yyyy-mm-dd to dd/mm/yyyy
-    const [year, month, day] = dateInput.split('-');
+
+    const [year, month, day] = dateInput.split("-");
     const dateDDMMYYYY = `${day}/${month}/${year}`;
 
-    // Generate text
     const sign = type === "income" ? "+" : "-";
     const notePart = note ? `: ${note}` : "";
     const line = `${sign} ${amount}${notePart}`;
-    
+
     const output = `*${dateDDMMYYYY}\n${line}`;
 
-    // Show output
     el("generatedText").textContent = output;
     el("generatedOutput").classList.remove("hidden");
 
-    // Copy to clipboard automatically
-    navigator.clipboard.writeText(output).then(() => {
-      // Optional: show feedback
-    }).catch(() => {
-      // Fallback: just show the text
-    });
-
-    // Reset form except date
+    navigator.clipboard.writeText(output).catch(() => {});
     el("inputAmount").value = "";
     el("inputNote").value = "";
     el("inputAmount").focus();
-
   } catch (err) {
     alert("Lỗi: " + err.message);
   }
@@ -448,19 +581,83 @@ function handleQuickInput() {
 
 async function copyGeneratedText() {
   const text = el("generatedText").textContent;
-  await navigator.clipboard.writeText(text);
-  
   const btn = el("btnCopyGenerated");
-  const oldHTML = btn.innerHTML;
-  btn.innerHTML = `
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <polyline points="20 6 9 17 4 12"/>
-    </svg>
-    OK
-  `;
-  setTimeout(() => (btn.innerHTML = oldHTML), 1200);
+  await copyText(text, btn, "OK");
 }
 
+/* =========================
+   Events
+========================= */
+function wireEvents() {
+  el("btnReload").addEventListener("click", () => {
+    loadFromRepo().catch(err => setError(err.message));
+  });
+
+  el("btnParse").addEventListener("click", () => {
+    try {
+      parseFromTextareas();
+    } catch (err) {
+      setError(String(err.message || err));
+    }
+  });
+
+  el("monthFilter").addEventListener("change", () => renderLedger(lastLedgerItems));
+  el("sortMode").addEventListener("change", () => renderLedger(lastLedgerItems));
+
+  el("btnDownload").addEventListener("click", () => {
+    downloadText("ledger.txt", el("rawInput").value);
+  });
+
+  el("btnCopy").addEventListener("click", () => {
+    copyText(el("rawInput").value, el("btnCopy")).catch(() => {
+      el("rawInput").select();
+      document.execCommand("copy");
+    });
+  });
+
+  el("rawInput").addEventListener("input", updateLineCount);
+
+  // Debts buttons (nếu có UI)
+  const btnCopyDebt = el("btnCopyDebt");
+  const btnDownloadDebt = el("btnDownloadDebt");
+  const debtArea = el("debtInput");
+
+  if (btnCopyDebt && debtArea) {
+    btnCopyDebt.addEventListener("click", () => {
+      copyText(debtArea.value, btnCopyDebt).catch(() => {
+        debtArea.select();
+        document.execCommand("copy");
+      });
+    });
+  }
+
+  if (btnDownloadDebt && debtArea) {
+    btnDownloadDebt.addEventListener("click", () => {
+      downloadText("debts.txt", debtArea.value);
+    });
+  }
+
+  if (debtArea) {
+    debtArea.addEventListener("input", updateDebtLineCount);
+  }
+
+  // Quick Input Form
+  el("quickInputForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    handleQuickInput();
+  });
+
+  el("btnCopyGenerated").addEventListener("click", () => {
+    copyGeneratedText();
+  });
+
+  const today = new Date().toISOString().split("T")[0];
+  el("inputDate").value = today;
+}
+
+/* =========================
+   Bootstrap
+========================= */
 (function bootstrap(){
   wireEvents();
 
