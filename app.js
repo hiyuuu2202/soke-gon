@@ -211,7 +211,10 @@ function renderTransactionList(items) {
     return;
   }
 
-  items.forEach(x => {
+  // Đảo ngược để hiển thị mới nhất trước
+  const reversedItems = [...items].reverse();
+
+  reversedItems.forEach(x => {
     const item = document.createElement("div");
     item.className = "transactionItem";
 
@@ -380,6 +383,82 @@ function wireEvents() {
   });
 
   el("rawInput").addEventListener("input", updateLineCount);
+
+  // Quick Input Form
+  el("quickInputForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    handleQuickInput();
+  });
+
+  el("btnCopyGenerated").addEventListener("click", () => {
+    copyGeneratedText();
+  });
+
+  // Set default date to today
+  const today = new Date().toISOString().split('T')[0];
+  el("inputDate").value = today;
+}
+
+function handleQuickInput() {
+  const dateInput = el("inputDate").value; // yyyy-mm-dd
+  const type = el("inputType").value;
+  const amountRaw = el("inputAmount").value.trim();
+  const note = el("inputNote").value.trim();
+
+  if (!dateInput || !amountRaw) {
+    alert("Vui lòng nhập đầy đủ ngày và số tiền!");
+    return;
+  }
+
+  try {
+    // Parse amount
+    const amount = parseAmount(amountRaw);
+    
+    // Convert date from yyyy-mm-dd to dd/mm/yyyy
+    const [year, month, day] = dateInput.split('-');
+    const dateDDMMYYYY = `${day}/${month}/${year}`;
+
+    // Generate text
+    const sign = type === "income" ? "+" : "-";
+    const notePart = note ? `: ${note}` : "";
+    const line = `${sign} ${amount}${notePart}`;
+    
+    const output = `*${dateDDMMYYYY}\n${line}`;
+
+    // Show output
+    el("generatedText").textContent = output;
+    el("generatedOutput").classList.remove("hidden");
+
+    // Copy to clipboard automatically
+    navigator.clipboard.writeText(output).then(() => {
+      // Optional: show feedback
+    }).catch(() => {
+      // Fallback: just show the text
+    });
+
+    // Reset form except date
+    el("inputAmount").value = "";
+    el("inputNote").value = "";
+    el("inputAmount").focus();
+
+  } catch (err) {
+    alert("Lỗi: " + err.message);
+  }
+}
+
+async function copyGeneratedText() {
+  const text = el("generatedText").textContent;
+  await navigator.clipboard.writeText(text);
+  
+  const btn = el("btnCopyGenerated");
+  const oldHTML = btn.innerHTML;
+  btn.innerHTML = `
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <polyline points="20 6 9 17 4 12"/>
+    </svg>
+    OK
+  `;
+  setTimeout(() => (btn.innerHTML = oldHTML), 1200);
 }
 
 (function bootstrap(){

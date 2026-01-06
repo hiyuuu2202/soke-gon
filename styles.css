@@ -191,14 +191,15 @@ p{ margin:8px 0 0; }
 }
 
 .filterLabel{
-  font-size:11px;
+  font-size:10px;
   color: var(--muted);
   text-transform: uppercase;
-  letter-spacing:.5px;
-  font-weight:600;
+  letter-spacing:.8px;
+  font-weight:700;
   display:flex;
   align-items:center;
-  gap:5px;
+  gap:6px;
+  margin-bottom:2px;
 }
 
 .select{
@@ -206,21 +207,30 @@ p{ margin:8px 0 0; }
   color: var(--text);
   border: 1px solid rgba(36,48,71,.9);
   border-radius: 10px;
-  padding: 8px 12px;
+  padding: 9px 14px;
   outline:none;
   font-size:13px;
-  font-weight:500;
+  font-weight:600;
   cursor:pointer;
-  transition: border-color .2s ease;
-  min-width: 140px;
+  transition: all .2s ease;
+  min-width: 150px;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 4L6 8L10 4' stroke='%23a7b0c0' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
 }
 
 .select:hover{
-  border-color: rgba(124,92,255,.6);
+  border-color: rgba(124,92,255,.7);
+  background: rgba(10,14,20,1);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(124,92,255,.2);
 }
 
 .select:focus{
-  border-color: rgba(124,92,255,.9);
+  border-color: rgba(124,92,255,1);
+  box-shadow: 0 0 0 3px rgba(124,92,255,.15);
 }
 
 /* Summary Pills */
@@ -433,12 +443,11 @@ p{ margin:8px 0 0; }
 
 /* Transaction List */
 .transactionCard{
-  position: sticky;
-  top: 20px;
+  margin-top: 20px;
 }
 
 .transactionList{
-  max-height: 540px;
+  max-height: 400px;
   overflow-y: auto;
   padding-right: 10px;
   margin-right: -6px;
@@ -809,4 +818,146 @@ code{
   .statsGrid{ grid-template-columns: 1fr; }
   .filters{ flex-direction:column; align-items:stretch; }
   .footerContent{ flex-direction:column; align-items:flex-start; }
+}
+
+/* Quick Input Form */
+.quickInputCard{
+  margin-bottom: 20px;
+}
+
+.quickInputForm{
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.formRow{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.formField{
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.formLabel{
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  font-weight: 700;
+}
+
+.formInput{
+  background: rgba(10,14,20,.9);
+  color: var(--text);
+  border: 1px solid rgba(36,48,71,.9);
+  border-radius: 10px;
+  padding: 10px 14px;
+  outline: none;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all .2s ease;
+  font-family: inherit;
+}
+
+.formInput:hover{
+  border-color: rgba(124,92,255,.6);
+}
+
+.formInput:focus{
+  border-color: rgba(124,92,255,1);
+  box-shadow: 0 0 0 3px rgba(124,92,255,.15);
+}
+
+.formInput::placeholder{
+  color: rgba(167,176,192,.5);
+}
+
+.formSelect{
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 4L6 8L10 4' stroke='%23a7b0c0' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
+}
+
+.generatedOutput{
+  margin-top: 16px;
+  background: rgba(10,14,20,.6);
+  border: 1px solid rgba(124,92,255,.4);
+  border-radius: 12px;
+  padding: 14px;
+  animation: slideIn .3s ease;
+}
+
+@keyframes slideIn{
+  from{
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to{
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.outputHeader{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.outputLabel{
+  font-size: 12px;
+  font-weight: 700;
+  color: #c4b5fd;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+
+.btnCopySmall{
+  background: rgba(124,92,255,.2);
+  border: 1px solid rgba(124,92,255,.5);
+  color: #c4b5fd;
+  padding: 5px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: all .2s ease;
+}
+
+.btnCopySmall:hover{
+  background: rgba(124,92,255,.3);
+  border-color: rgba(124,92,255,.8);
+  transform: translateY(-1px);
+}
+
+.outputText{
+  background: rgba(10,14,20,.8);
+  border: 1px solid rgba(36,48,71,.7);
+  border-radius: 8px;
+  padding: 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+  color: #86efac;
+  line-height: 1.6;
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+@media (max-width: 600px){
+  .formRow{
+    grid-template-columns: 1fr;
+  }
 }
