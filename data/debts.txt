@@ -3,10 +3,6 @@
 # + số_tiền: người đó nợ tôi
 # - số_tiền: tôi nợ người đó
 
-@Ngọc Quyết
-- 28k: Mixue
-- 30k: Mixue
-
 @Đạt Tiến Nguyễn
 - 35k: Tiền ăn trưa
 
