@@ -9,7 +9,12 @@
 @Việt Lá
 + 50k: Việt lá vay
 
+@Đan
++ 28k: Tiền Mixue
+- 40k: Tiền Nem nướng
+
 @Ngọc Quyết
-- 23k: TMore 
+- 23k: TMore (Chưa tính tiền Nhậu)
++ 28k: Tiền Mixue
 
 
