@@ -3,9 +3,6 @@
 # + số_tiền: người đó nợ tôi
 # - số_tiền: tôi nợ người đó
 
-@Đạt Tiến Nguyễn
-- 35k: Tiền ăn trưa
-
 @Việt Lá
 + 50k: Việt lá vay
 
@@ -16,5 +13,6 @@
 @Ngọc Quyết
 - 23k: TMore (Chưa tính tiền Nhậu)
 + 28k: Tiền Mixue
+- 246k: Nhậu nhẹt hư người
 
 
